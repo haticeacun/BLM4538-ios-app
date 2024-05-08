@@ -24,6 +24,11 @@ export default function HomeScreen() {
   const [activeCategory, setActiveCategory] = useState("Beef");
   const [categories, setCategories] = useState([]);
   const [meals, setMeals] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetchAllMeals(); // Tüm yemekleri çek
+  }, []);
 
   useEffect(() => {
     getCategories();
@@ -34,6 +39,7 @@ export default function HomeScreen() {
     getRecipes(category);
     setActiveCategory(category);
     setMeals([]);
+    setSearchQuery('');
   };
 
   const getCategories = async () => {
@@ -50,18 +56,49 @@ export default function HomeScreen() {
     }
   };
 
-  const getRecipes = async (category = "Beef") => {
+  const getRecipes = async (category = "Beef", query = "") => {
     try {
-      const response = await axios.get(
-        `https://www.themealdb.com/api/json/v1/1/filter.php?c=${category}`
-      );
-      if (response && response.data) {
-        setMeals(response.data.meals);
+      let url = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${category}`;
+      const response = await axios.get(url);
+      if (response && response.data && response.data.meals) {
+        // İstemci tarafında yemek adına göre filtreleme
+        const filteredMeals = query
+          ? response.data.meals.filter(meal => meal.strMeal.toLowerCase().includes(query.toLowerCase()))
+          : response.data.meals;
+        setMeals(filteredMeals);
+        console.log("Filtered meals: ", filteredMeals);
+      } else {
+        setMeals([]);
       }
     } catch (error) {
-      console.log(error.message);
+      console.log("Error fetching recipes: ", error.message);
     }
   };
+
+  const fetchAllMeals = async (query = "") => {
+    try {
+      const categoryResponse = await axios.get('https://www.themealdb.com/api/json/v1/1/categories.php');
+      const categories = categoryResponse.data.categories;
+  
+      const mealsRequests = categories.map(category => 
+        axios.get(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${category.strCategory}`)
+      );
+      const mealsResponses = await Promise.all(mealsRequests);
+      let allMeals = mealsResponses.flatMap(response => response.data.meals || []);
+  
+      // İstemci tarafında yemek adına göre filtreleme
+      if (query) {
+        allMeals = allMeals.filter(meal => 
+          meal.strMeal.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      setMeals(allMeals);
+    } catch (error) {
+      console.error("Error fetching all meals: ", error.message);
+      setMeals([]);
+    }
+  };
+  
 
   return (
     <View className="flex-1 bg-white">
@@ -69,11 +106,11 @@ export default function HomeScreen() {
 
       <SafeAreaView>
         <ScrollView showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
+          contentContainerStyle={{
             paddingBottom: 50,
           }}
           className="space-y-6 pt-14"
-          >
+        >
 
           {/* Avatar and Bell Icon */}
           <View className="mx-4 flex-row justify-between items-center">
@@ -128,6 +165,16 @@ export default function HomeScreen() {
                 fontSize: hp(1.7),
               }}
               className="flex-1 text-base mb-1 pl-1 tracking-widest"
+              value={searchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                if (!text) {
+                  getRecipes(activeCategory); // Eğer arama kutusu boşsa, tüm yemekleri getir.
+                }
+              }}
+              onSubmitEditing={() => fetchAllMeals(searchQuery.trim().toLowerCase())}
+              
+
             />
           </View>
 
