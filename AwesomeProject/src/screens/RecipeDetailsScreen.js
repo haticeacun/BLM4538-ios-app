@@ -3,7 +3,6 @@ import {
     Text,
     ScrollView,
     Image,
-    Touchable,
     TouchableOpacity,
 } from "react-native";
 import React, { useEffect, useState } from "react";
@@ -19,6 +18,8 @@ import { HeartIcon } from "react-native-heroicons/solid";
 import Loading from "../components/Loading";
 import axios from "axios";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { getFavorites, toggleFavorite } from "../screens/helper"; // Updated import path
+
 
 export default function RecipeDetailsScreen(props) {
     let item = props.route.params;
@@ -27,11 +28,10 @@ export default function RecipeDetailsScreen(props) {
     const [isLoading, setIsLoading] = useState(true);
     const [isFavourite, setIsFavourite] = useState(false);
 
-    console.log("Meal", meal);
-
     useEffect(() => {
         getMealData(item.idMeal);
-    });
+        checkIfFavourite(item.idMeal); // Check if the meal is a favourite
+    }, [item.idMeal]);
 
     const getMealData = async (id) => {
         try {
@@ -46,6 +46,17 @@ export default function RecipeDetailsScreen(props) {
         } catch (error) {
             console.log(error.message);
         }
+    };
+
+    const checkIfFavourite = async (id) => {
+        const favorites = await getFavorites();
+        const isFav = favorites.some(meal => meal.idMeal === id);
+        setIsFavourite(isFav);
+    };
+
+    const handleFavouriteToggle = async () => {
+        const updatedFavorites = await toggleFavorite(item);
+        setIsFavourite(!isFavourite);
     };
 
     const ingredientsIndexes = (meal) => {
@@ -72,7 +83,6 @@ export default function RecipeDetailsScreen(props) {
             <StatusBar style="white" />
 
             {/* Recipe Image */}
-
             <View className="flex-row justify-center">
                 <CachedImage
                     uri={item.strMealThumb}
@@ -85,7 +95,6 @@ export default function RecipeDetailsScreen(props) {
             </View>
 
             {/* Back Button and Favorite Icon */}
-
             <View className="w-full absolute flex-row justify-between items-center pt-10">
                 <View className="p-2 rounded-full bg-white ml-5">
                     <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -98,7 +107,7 @@ export default function RecipeDetailsScreen(props) {
                 </View>
 
                 <View className="p-2 rounded-full bg-white mr-5">
-                    <TouchableOpacity onPress={() => setIsFavourite(!isFavourite)}>
+                    <TouchableOpacity onPress={handleFavouriteToggle}>
                         <HeartIcon
                             size={hp(3.5)}
                             color={isFavourite ? "#f64e32" : "gray"}
@@ -109,7 +118,6 @@ export default function RecipeDetailsScreen(props) {
             </View>
 
             {/* Meal Description */}
-
             {isLoading ? (
                 <Loading size="large" className="mt-16" />
             ) : (
@@ -149,7 +157,6 @@ export default function RecipeDetailsScreen(props) {
                     </Animated.View>
 
                     {/* Ingredients */}
-
                     <Animated.View
                         className="space-y-4 p-4"
                         entering={FadeInDown.delay(300)

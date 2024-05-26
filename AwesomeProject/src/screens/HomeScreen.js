@@ -7,10 +7,7 @@ import {
   TextInput,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import {
-  MagnifyingGlassIcon,
-  AdjustmentsHorizontalIcon,
-} from "react-native-heroicons/outline";
+import { MagnifyingGlassIcon} from "react-native-heroicons/outline";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 import axios from "axios";
 import { StatusBar } from "expo-status-bar";
@@ -114,7 +111,6 @@ export default function HomeScreen() {
 
           {/* Avatar and Bell Icon */}
           <View className="mx-4 flex-row justify-between items-center">
-            <AdjustmentsHorizontalIcon size={hp(4)} color={"gray"} />
             <Image
               source={require("../../assets/avatar.png")}
               style={{
